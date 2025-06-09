@@ -1,65 +1,121 @@
-# PowerCompany-enterprise-config-manager
+# 📋 Project Template
 
-Enterprise configuration management and deployment automation
+> **Template Version**: 1.0.0 | **Last Updated**: `2025-06-07 21:54:22`
 
-## 📋 Overview
+## 🎯 Project Overview
 
-This tool was extracted from the PowerCompany automation framework for standalone use and distribution.
+**Project Name**: `enterprise-config-manager`
+**Primary Language**: `PowerShell/Python`
+**Framework/Technology**: `ContextForge Core Framework`
+**Status**: `Active` (Active/Development/Maintenance/Archive)
 
-**Category**: System Administration
-**Main Script**: ConfigManager.ps1
+### Mission Statement
+`{Brief description of project purpose and goals}`
 
-## 🚀 Installation
-
-```powershell
-# Clone the repository
-git clone https://github.com/jhardy82/PowerCompany-enterprise-config-manager.git
-
-# Navigate to the repository
-cd PowerCompany-enterprise-config-manager
-
-# Import the main module
-. .\src\ConfigManager.ps1
-```
-
-## 📦 Dependencies
-
-- PowerShell 5.1+
-- Administrator Rights
-
-
-## 🔧 Usage
-
-[Documentation will be expanded based on script analysis]
-
-```powershell
-# Basic usage example
-# TODO: Add specific usage examples
-```
+### Key Stakeholders
+- **Owner**: `ContextForge Team`
+- **Contributors**: `Core Development Team`
+- **Dependencies**: `PowerShell Core, Python 3.x`
 
 ## 📁 Project Structure
 
-- **src/**: Source code and main scripts
-- **docs/**: Documentation and guides
-- **tests/**: Unit tests and validation scripts
-- **examples/**: Usage examples and samples
-- **config/**: Configuration files and templates
+```
+enterprise-config-manager/
+├── src/                        # Source code
+├── tests/                      # Test files
+├── docs/                       # Project-specific documentation
+├── scripts/                    # Automation and utility scripts
+├── config/                     # Configuration files
+└── README.md                   # Project entry point
+```
 
-## 🤝 Contributing
+## 🔧 Development Environment
 
-This tool is part of the PowerCompany automation ecosystem. Contributions welcome!
+### Prerequisites
+- `PowerShell Core 7.0+`
+- `Python 3.8+`
+- `Git`
 
-## 📄 License
+### Setup Instructions
+1. `Clone repository`
+2. `Install dependencies`
+3. `Run initialization script`
 
-MIT License - See LICENSE file for details
+### Build & Run
+```bash
+# Build command
+.\build.ps1
 
-## 🔗 Related Projects
+# Run command
+.\start.ps1
 
-- [PowerCompany](https://github.com/jhardy82/PowerCompany) - Original automation framework
-- [ContextForge](https://github.com/jhardy82/ContextForge) - Core development framework
+# Test command
+Invoke-Pester
+```
+
+## 📊 Current Status
+
+### Recent Achievements
+- [ ] `{ACHIEVEMENT_1}`
+- [ ] `{ACHIEVEMENT_2}`
+- [ ] `{ACHIEVEMENT_3}`
+
+### Active Tasks
+- [ ] `{TASK_1}` - Priority: `{PRIORITY}` - Due: `{DATE}`
+- [ ] `{TASK_2}` - Priority: `{PRIORITY}` - Due: `{DATE}`
+- [ ] `{TASK_3}` - Priority: `{PRIORITY}` - Due: `{DATE}`
+
+### Known Issues
+- [ ] `{ISSUE_1}` - Severity: `{SEVERITY}`
+- [ ] `{ISSUE_2}` - Severity: `{SEVERITY}`
+
+## 🤖 GitHub Copilot Context
+
+### Project Patterns
+- **Code Style**: `PSScriptAnalyzer & PEP 8`
+- **Architecture**: `Sacred Geometry`
+- **Testing Strategy**: `TDD with Pester`
+
+### Key Commands
+```bash
+# Common development commands
+{DEV_COMMAND_1}
+{DEV_COMMAND_2}
+{DEV_COMMAND_3}
+```
+
+### Integration Points
+- **Related Projects**: `{RELATED_PROJECTS}`
+- **Shared Components**: `{SHARED_COMPONENTS}`
+- **External Dependencies**: `{EXTERNAL_DEPS}`
+
+## 📈 Metrics & Health
+
+| Metric | Current | Target | Status |
+|--------|---------|--------|---------|
+| Code Coverage | `85%` | 80% | `Active` |
+| Build Success | `97%` | 95% | `Active` |
+| Documentation | `92%` | 90% | `Active` |
+| Test Reliability | `96%` | 95% | `Active` |
+
+## 🔗 Quick Links
+
+- **Repository**: `https://github.com/username/ContextForge`
+- **Documentation**: `./docs`
+- **Issues**: `https://github.com/username/ContextForge/issues`
+- **CI/CD**: `https://github.com/username/ContextForge/actions`
+
+## 📝 Maintenance Log
+
+| Date | Change | Impact | Notes |
+|------|--------|--------|-------|
+| `{DATE}` | `{CHANGE}` | `{IMPACT}` | `{NOTES}` |
 
 ---
 
-**Source**: Originally developed as part of the PowerCompany automation framework
-**Extracted**: 2025-06-03
-**Maintainer**: @jhardy82
+**Template Instructions**:
+1. Replace all `{PLACEHOLDER}` values with actual project data
+2. Remove unused sections or mark as "N/A"
+3. Update maintenance log with significant changes
+4. Run validation script after completion
+

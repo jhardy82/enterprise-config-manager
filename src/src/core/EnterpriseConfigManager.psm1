@@ -1,41 +1,41 @@
 <#
 .SYNOPSIS
-    Enterprise Configuration Management Framework for PowerShell Applications
+Enterprise Configuration Management Framework for PowerShell Applications
 
 .DESCRIPTION
-    Comprehensive configuration management system that handles JSON, TOML, YAML, and INI
-    configurations with environment variable expansion, validation, schema enforcement,
-    hierarchical overrides, and enterprise security features.
+Comprehensive configuration management system that handles JSON, TOML, YAML, and INI
+configurations with environment variable expansion, validation, schema enforcement,
+hierarchical overrides, and enterprise security features.
 
 .NOTES
-    Version: 1.0.0
-    Author: PowerShell Development Team  
-    Requires: PowerShell 5.1 or higher
-    
-    Features:
-    - Multi-format configuration support (JSON, TOML, YAML, INI)
-    - Environment variable expansion with fallback patterns
-    - Hierarchical configuration overrides (System > User > Project > Runtime)
-    - Schema validation with custom validators
-    - Secure credential management integration
-    - Audit trail and compliance logging
-    - Cross-platform path handling
-    - PowerShell 5.1 compatibility
+Version: 1.0.0
+Author: PowerShell Development Team
+Requires: PowerShell 5.1 or higher
+
+Features:
+- Multi-format configuration support (JSON, TOML, YAML, INI)
+- Environment variable expansion with fallback patterns
+- Hierarchical configuration overrides (System > User > Project > Runtime)
+- Schema validation with custom validators
+- Secure credential management integration
+- Audit trail and compliance logging
+- Cross-platform path handling
+- PowerShell 5.1 compatibility
 #>
 
-#Requires -Version 5.1
+#Requires -Version 7.0
 
 # Module-level context for configuration state management
 $Script:ConfigContext = [PSCustomObject]@{
-    Timestamp = Get-Date
-    HasError = $false
-    LoadedConfigs = @{}
-    ValidationErrors = @()
-    AuditLog = @()
-    CacheEnabled = $true
-    CacheTimeout = 300 # 5 minutes
+    Timestamp            = Get-Date
+    HasError             = $false
+    LoadedConfigs        = @{}
+    ValidationErrors     = @()
+    AuditLog             = @()
+    CacheEnabled         = $true
+    CacheTimeout         = 300 # 5 minutes
     EnvironmentExpansion = $true
-    ValidationEnabled = $true
+    ValidationEnabled    = $true
 }
 
 #region Core Configuration Classes
@@ -43,7 +43,7 @@ $Script:ConfigContext = [PSCustomObject]@{
 class ConfigurationError : System.Exception {
     [string]$ConfigPath
     [string]$ValidationDetails
-    
+
     ConfigurationError([string]$message) : base($message) {}
     ConfigurationError([string]$message, [string]$configPath) : base($message) {
         $this.ConfigPath = $configPath
@@ -59,30 +59,30 @@ class ConfigurationSchema {
     [hashtable]$Required
     [hashtable]$Validators
     [string]$Version
-    
+
     ConfigurationSchema() {
         $this.Properties = @{}
         $this.Required = @{}
         $this.Validators = @{}
         $this.Version = "1.0"
     }
-    
+
     [void] AddProperty([string]$name, [type]$type, [bool]$required) {
         $this.Properties[$name] = $type
         $this.Required[$name] = $required
     }
-    
+
     [void] AddValidator([string]$property, [scriptblock]$validator) {
         $this.Validators[$property] = $validator
     }
-    
+
     [bool] ValidateConfiguration([hashtable]$config) {
         foreach ($requiredProp in $this.Required.GetEnumerator()) {
             if ($requiredProp.Value -and -not $config.ContainsKey($requiredProp.Key)) {
                 throw [ConfigurationError]::new("Required property '$($requiredProp.Key)' is missing")
             }
         }
-        
+
         foreach ($validator in $this.Validators.GetEnumerator()) {
             if ($config.ContainsKey($validator.Key)) {
                 $result = & $validator.Value $config[$validator.Key]
@@ -91,7 +91,7 @@ class ConfigurationSchema {
                 }
             }
         }
-        
+
         return $true
     }
 }
@@ -104,7 +104,7 @@ class ConfigurationManager {
     [hashtable]$EnvironmentOverrides
     [datetime]$LastLoaded
     [bool]$AutoReload
-    
+
     ConfigurationManager([string]$configPath) {
         $this.ConfigPath = $configPath
         $this.Configuration = @{}
@@ -112,30 +112,30 @@ class ConfigurationManager {
         $this.EnvironmentOverrides = @{}
         $this.AutoReload = $false
     }
-    
+
     [void] AddSearchPath([string]$path) {
         if (Test-Path $path) {
             $this.SearchPaths += $path
         }
     }
-    
+
     [hashtable] LoadConfiguration() {
         return $this.LoadConfiguration($false)
     }
-    
+
     [hashtable] LoadConfiguration([bool]$force) {
-        if (-not $force -and $this.Configuration.Count -gt 0 -and 
+        if (-not $force -and $this.Configuration.Count -gt 0 -and
             ((Get-Date) - $this.LastLoaded).TotalSeconds -lt $Script:ConfigContext.CacheTimeout) {
             return $this.Configuration
         }
-        
+
         $this.Configuration = @{}
-        
+
         # Load base configuration
         if (Test-Path $this.ConfigPath) {
             $this.Configuration = $this.LoadConfigFile($this.ConfigPath)
         }
-        
+
         # Apply hierarchical overrides
         foreach ($searchPath in $this.SearchPaths) {
             $overrideFile = Join-Path $searchPath "config-override.json"
@@ -144,163 +144,178 @@ class ConfigurationManager {
                 $this.Configuration = $this.MergeConfigurations($this.Configuration, $override)
             }
         }
-        
+
         # Apply environment overrides
         $this.ApplyEnvironmentOverrides()
-        
+
         # Expand environment variables
         if ($Script:ConfigContext.EnvironmentExpansion) {
             $this.Configuration = $this.ExpandEnvironmentVariables($this.Configuration)
         }
-        
+
         # Validate configuration
         if ($this.Schema -and $Script:ConfigContext.ValidationEnabled) {
             $this.Schema.ValidateConfiguration($this.Configuration)
         }
-        
+
         $this.LastLoaded = Get-Date
         return $this.Configuration
     }
-    
+
     [hashtable] LoadConfigFile([string]$path) {
         $extension = [System.IO.Path]::GetExtension($path).ToLower()
-        
+
         switch ($extension) {
             ".json" { return $this.LoadJsonConfig($path) }
             ".toml" { return $this.LoadTomlConfig($path) }
             ".yaml" { return $this.LoadYamlConfig($path) }
-            ".yml"  { return $this.LoadYamlConfig($path) }
-            ".ini"  { return $this.LoadIniConfig($path) }
-            default { throw [ConfigurationError]::new("Unsupported configuration format: $extension", $path) }
+            ".yml" { return $this.LoadYamlConfig($path) }
+            ".ini" { return $this.LoadIniConfig($path) }
+            default {
+                throw [ConfigurationError]::new("Unsupported configuration format: $extension", $path)
+                return @{} # Unreachable but satisfies PowerShell return path analysis
+            }
         }
     }
-    
+
     [hashtable] LoadJsonConfig([string]$path) {
         try {
             $content = Get-Content -Path $path -Raw -ErrorAction Stop
             return $content | ConvertFrom-Json -AsHashtable -ErrorAction Stop
-        }
-        catch {
+        } catch {
             throw [ConfigurationError]::new("Failed to load JSON configuration: $($_.Exception.Message)", $path)
         }
     }
-    
+
     [hashtable] LoadTomlConfig([string]$path) {
-        # Basic TOML support - could be enhanced with dedicated TOML parser
         try {
             $content = Get-Content -Path $path -Raw -ErrorAction Stop
-            # Simple TOML to hashtable conversion (basic implementation)
             return $this.ConvertTomlToHashtable($content)
-        }
-        catch {
+        } catch {
             throw [ConfigurationError]::new("Failed to load TOML configuration: $($_.Exception.Message)", $path)
         }
     }
-    
+
     [hashtable] LoadYamlConfig([string]$path) {
-        # Basic YAML support - could be enhanced with PowerShell-Yaml module
         try {
             $content = Get-Content -Path $path -Raw -ErrorAction Stop
-            # Simple YAML to hashtable conversion (basic implementation)
             return $this.ConvertYamlToHashtable($content)
-        }
-        catch {
+        } catch {
             throw [ConfigurationError]::new("Failed to load YAML configuration: $($_.Exception.Message)", $path)
         }
     }
-    
+
     [hashtable] LoadIniConfig([string]$path) {
         try {
             $config = @{}
             $section = "Global"
             $config[$section] = @{}
-            
+
             $content = Get-Content -Path $path -ErrorAction Stop
             foreach ($line in $content) {
                 $line = $line.Trim()
                 if ($line -match '^\[(.+)\]$') {
                     $section = $matches[1]
                     $config[$section] = @{}
-                }
-                elseif ($line -match '^([^=]+)=(.*)$') {
+                } elseif ($line -match '^([^=]+)=(.*)$') {
                     $key = $matches[1].Trim()
                     $value = $matches[2].Trim()
                     $config[$section][$key] = $value
                 }
             }
-            
+
             return $config
-        }
-        catch {
+        } catch {
             throw [ConfigurationError]::new("Failed to load INI configuration: $($_.Exception.Message)", $path)
         }
     }
-    
+
     [hashtable] ConvertTomlToHashtable([string]$content) {
-        # Basic TOML parser - implement based on needs
         $config = @{}
         $section = "Global"
         $config[$section] = @{}
-        
+
         $lines = $content -split "`n"
         foreach ($line in $lines) {
             $line = $line.Trim()
             if ($line -match '^\[(.+)\]$') {
                 $section = $matches[1]
                 $config[$section] = @{}
-            }
-            elseif ($line -match '^([^=]+)\s*=\s*(.+)$') {
+            } elseif ($line -match '^([^=]+)\s*=\s*(.+)$') {
                 $key = $matches[1].Trim()
                 $value = $matches[2].Trim()
                 $config[$section][$key] = $this.ParseTomlValue($value)
             }
         }
-        
+
         return $config
     }
-    
+
     [hashtable] ConvertYamlToHashtable([string]$content) {
-        # Basic YAML parser - implement based on needs
+        # Basic YAML parser implementation
         $config = @{}
-        # Simplified YAML parsing - would need full YAML parser for production
+        $currentIndent = 0
+        $stack = @($config)
+
+        $lines = $content -split "`n"
+        foreach ($line in $lines) {
+            if ($line.Trim() -eq '') { continue }
+
+            $indent = ($line -match '^(\s*)')[0].Length
+            $line = $line.Trim()
+
+            if ($line -match '^([^:]+):\s*(.*)$') {
+                $key = $matches[1].Trim()
+                $value = $matches[2].Trim()
+
+                if ($value) {
+                    $stack[-1][$key] = $value
+                } else {
+                    $stack[-1][$key] = @{}
+                    $stack += $stack[-1][$key]
+                }
+            }
+        }
+
         return $config
     }
-    
+
     [object] ParseTomlValue([string]$value) {
         $value = $value.Trim()
-        
+
         # String values
-        if ($value.StartsWith('"') -and $value.EndsWith('"')) {
+        if ($value -match '^".*"$') {
             return $value.Substring(1, $value.Length - 2)
         }
-        
+
         # Boolean values
         if ($value -eq "true") { return $true }
         if ($value -eq "false") { return $false }
-        
+
         # Numeric values
-        if ($value -match '^\d+$') { return [int]$value }
-        if ($value -match '^\d+\.\d+$') { return [double]$value }
-        
+        [double]$numericValue = 0
+        if ([double]::TryParse($value, [ref]$numericValue)) {
+            return $numericValue
+        }
+
         # Default to string
         return $value
     }
-    
+
     [hashtable] MergeConfigurations([hashtable]$base, [hashtable]$override) {
         $merged = $base.Clone()
-        
+
         foreach ($key in $override.Keys) {
             if ($merged.ContainsKey($key) -and $merged[$key] -is [hashtable] -and $override[$key] -is [hashtable]) {
                 $merged[$key] = $this.MergeConfigurations($merged[$key], $override[$key])
-            }
-            else {
+            } else {
                 $merged[$key] = $override[$key]
             }
         }
-        
+
         return $merged
     }
-    
+
     [void] ApplyEnvironmentOverrides() {
         foreach ($envVar in $this.EnvironmentOverrides.GetEnumerator()) {
             $envValue = [Environment]::GetEnvironmentVariable($envVar.Key)
@@ -309,50 +324,48 @@ class ConfigurationManager {
             }
         }
     }
-    
+
     [hashtable] ExpandEnvironmentVariables([hashtable]$config) {
         $expanded = @{}
-        
+
         foreach ($key in $config.Keys) {
             if ($config[$key] -is [hashtable]) {
                 $expanded[$key] = $this.ExpandEnvironmentVariables($config[$key])
-            }
-            elseif ($config[$key] -is [string]) {
+            } elseif ($config[$key] -is [string]) {
                 $expanded[$key] = [Environment]::ExpandEnvironmentVariables($config[$key])
-            }
-            else {
+            } else {
                 $expanded[$key] = $config[$key]
             }
         }
-        
+
         return $expanded
     }
-    
+
     [void] SetConfigValue([string]$path, [object]$value) {
         $keys = $path -split '\.'
         $current = $this.Configuration
-        
+
         for ($i = 0; $i -lt ($keys.Length - 1); $i++) {
             if (-not $current.ContainsKey($keys[$i])) {
                 $current[$keys[$i]] = @{}
             }
             $current = $current[$keys[$i]]
         }
-        
+
         $current[$keys[-1]] = $value
     }
-    
+
     [object] GetConfigValue([string]$path, [object]$default = $null) {
         $keys = $path -split '\.'
         $current = $this.Configuration
-        
+
         foreach ($key in $keys) {
             if (-not $current.ContainsKey($key)) {
                 return $default
             }
             $current = $current[$key]
         }
-        
+
         return $current
     }
 }
@@ -433,8 +446,7 @@ function Get-OrElse {
 
             Write-Verbose "Get-OrElse: Using default value: $Default"
             return $Default
-        }
-        catch {
+        } catch {
             Write-Warning "Error in Get-OrElse: $($_.Exception.Message)"
             if ($Script:ConfigContext.PSObject.Properties['HasError']) {
                 $Script:ConfigContext.HasError = $true
@@ -475,33 +487,32 @@ function New-ConfigurationManager {
     param(
         [Parameter(Mandatory = $true)]
         [string]$ConfigPath,
-        
+
         [Parameter(Mandatory = $false)]
         [ConfigurationSchema]$Schema,
-        
+
         [Parameter(Mandatory = $false)]
         [string[]]$SearchPaths = @()
     )
-    
+
     process {
         try {
             $manager = [ConfigurationManager]::new($ConfigPath)
-            
+
             if ($Schema) {
                 $manager.Schema = $Schema
             }
-            
+
             foreach ($path in $SearchPaths) {
                 $manager.AddSearchPath($path)
             }
-            
+
             # Add to context tracking
             $Script:ConfigContext.LoadedConfigs[$ConfigPath] = $manager
-            
+
             Write-Verbose "Created configuration manager for: $ConfigPath"
             return $manager
-        }
-        catch {
+        } catch {
             $Script:ConfigContext.HasError = $true
             $Script:ConfigContext.ValidationErrors += "Failed to create configuration manager: $($_.Exception.Message)"
             throw
@@ -526,7 +537,7 @@ function New-ConfigurationManager {
 function New-ConfigurationSchema {
     [CmdletBinding()]
     param()
-    
+
     process {
         return [ConfigurationSchema]::new()
     }
@@ -565,26 +576,26 @@ function Import-EnterpriseConfiguration {
     param(
         [Parameter(Mandatory = $true)]
         [string]$ConfigPath,
-        
+
         [Parameter(Mandatory = $false)]
         [string[]]$OverridePaths = @(),
-        
+
         [Parameter(Mandatory = $false)]
         [switch]$ExpandEnvironmentVariables,
-        
+
         [Parameter(Mandatory = $false)]
         [switch]$ValidateSchema
     )
-    
+
     process {
         try {
             if (-not (Test-Path $ConfigPath)) {
                 throw [ConfigurationError]::new("Configuration file not found: $ConfigPath", $ConfigPath)
             }
-            
+
             # Create temporary manager for this operation
             $manager = [ConfigurationManager]::new($ConfigPath)
-            
+
             # Add override paths
             foreach ($overridePath in $OverridePaths) {
                 if (Test-Path $overridePath) {
@@ -592,50 +603,48 @@ function Import-EnterpriseConfiguration {
                     $manager.AddSearchPath($overrideDir)
                 }
             }
-            
+
             # Configure behavior
             $oldExpansionSetting = $Script:ConfigContext.EnvironmentExpansion
             $oldValidationSetting = $Script:ConfigContext.ValidationEnabled
-            
+
             $Script:ConfigContext.EnvironmentExpansion = $ExpandEnvironmentVariables.IsPresent
             $Script:ConfigContext.ValidationEnabled = $ValidateSchema.IsPresent
-            
+
             try {
                 $configuration = $manager.LoadConfiguration($true)
-                
+
                 # Add audit entry
                 $Script:ConfigContext.AuditLog += @{
-                    Timestamp = Get-Date
-                    Action = "Import"
-                    ConfigPath = $ConfigPath
+                    Timestamp     = Get-Date
+                    Action        = "Import"
+                    ConfigPath    = $ConfigPath
                     OverridePaths = $OverridePaths
-                    Success = $true
+                    Success       = $true
                 }
-                
+
                 Write-Verbose "Successfully loaded configuration from: $ConfigPath"
                 return $configuration
-            }
-            finally {
+            } finally {
                 # Restore original settings
                 $Script:ConfigContext.EnvironmentExpansion = $oldExpansionSetting
                 $Script:ConfigContext.ValidationEnabled = $oldValidationSetting
             }
-        }
-        catch {
+        } catch {
             $Script:ConfigContext.HasError = $true
             $errorDetails = "Failed to import configuration: $($_.Exception.Message)"
             $Script:ConfigContext.ValidationErrors += $errorDetails
-            
+
             # Add audit entry for failure
             $Script:ConfigContext.AuditLog += @{
-                Timestamp = Get-Date
-                Action = "Import"
-                ConfigPath = $ConfigPath
+                Timestamp     = Get-Date
+                Action        = "Import"
+                ConfigPath    = $ConfigPath
                 OverridePaths = $OverridePaths
-                Success = $false
-                Error = $errorDetails
+                Success       = $false
+                Error         = $errorDetails
             }
-            
+
             throw [ConfigurationError]::new($errorDetails, $ConfigPath)
         }
     }
@@ -670,18 +679,18 @@ function Export-EnterpriseConfiguration {
     param(
         [Parameter(Mandatory = $true)]
         [hashtable]$Configuration,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$OutputPath,
-        
+
         [Parameter(Mandatory = $false)]
         [ValidateSet("JSON", "TOML", "YAML", "INI")]
         [string]$Format = "JSON",
-        
+
         [Parameter(Mandatory = $false)]
         [switch]$Indent
     )
-    
+
     process {
         if ($PSCmdlet.ShouldProcess($OutputPath, "Export configuration as $Format")) {
             try {
@@ -689,7 +698,7 @@ function Export-EnterpriseConfiguration {
                 if ($outputDir -and -not (Test-Path $outputDir)) {
                     New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
                 }
-                
+
                 switch ($Format) {
                     "JSON" {
                         $content = $Configuration | ConvertTo-Json -Depth 10
@@ -707,21 +716,20 @@ function Export-EnterpriseConfiguration {
                         $content = ConvertTo-IniString -Configuration $Configuration
                     }
                 }
-                
+
                 Set-Content -Path $OutputPath -Value $content -Encoding UTF8
-                
+
                 # Add audit entry
                 $Script:ConfigContext.AuditLog += @{
-                    Timestamp = Get-Date
-                    Action = "Export"
+                    Timestamp  = Get-Date
+                    Action     = "Export"
                     OutputPath = $OutputPath
-                    Format = $Format
-                    Success = $true
+                    Format     = $Format
+                    Success    = $true
                 }
-                
+
                 Write-Verbose "Successfully exported configuration to: $OutputPath"
-            }
-            catch {
+            } catch {
                 $Script:ConfigContext.HasError = $true
                 $errorDetails = "Failed to export configuration: $($_.Exception.Message)"
                 $Script:ConfigContext.ValidationErrors += $errorDetails
@@ -762,23 +770,23 @@ function Test-EnterpriseConfiguration {
     param(
         [Parameter(Mandatory = $true)]
         [string]$ConfigPath,
-        
+
         [Parameter(Mandatory = $false)]
         [ConfigurationSchema]$Schema,
-        
+
         [Parameter(Mandatory = $false)]
         [switch]$TestEnvironmentExpansion
     )
-    
+
     process {
         $results = @{
-            IsValid = $true
-            Errors = @()
-            Warnings = @()
-            ConfigPath = $ConfigPath
+            IsValid     = $true
+            Errors      = @()
+            Warnings    = @()
+            ConfigPath  = $ConfigPath
             TestResults = @{}
         }
-        
+
         try {
             # Test file existence
             if (-not (Test-Path $ConfigPath)) {
@@ -786,49 +794,45 @@ function Test-EnterpriseConfiguration {
                 $results.Errors += "Configuration file not found: $ConfigPath"
                 return $results
             }
-            
+
             # Test file format
             try {
                 $manager = [ConfigurationManager]::new($ConfigPath)
                 $config = $manager.LoadConfigFile($ConfigPath)
                 $results.TestResults["FormatValid"] = $true
-            }
-            catch {
+            } catch {
                 $results.IsValid = $false
                 $results.Errors += "Invalid configuration format: $($_.Exception.Message)"
                 $results.TestResults["FormatValid"] = $false
                 return $results
             }
-            
+
             # Test schema validation
             if ($Schema) {
                 try {
                     $Schema.ValidateConfiguration($config)
                     $results.TestResults["SchemaValid"] = $true
-                }
-                catch {
+                } catch {
                     $results.IsValid = $false
                     $results.Errors += "Schema validation failed: $($_.Exception.Message)"
                     $results.TestResults["SchemaValid"] = $false
                 }
             }
-            
+
             # Test environment expansion
             if ($TestEnvironmentExpansion) {
                 try {
                     $expandedConfig = $manager.ExpandEnvironmentVariables($config)
                     $results.TestResults["EnvironmentExpansion"] = $true
-                }
-                catch {
+                } catch {
                     $results.Warnings += "Environment expansion issues: $($_.Exception.Message)"
                     $results.TestResults["EnvironmentExpansion"] = $false
                 }
             }
-            
+
             Write-Verbose "Configuration validation completed for: $ConfigPath"
             return $results
-        }
-        catch {
+        } catch {
             $results.IsValid = $false
             $results.Errors += "Validation error: $($_.Exception.Message)"
             return $results
@@ -851,7 +855,7 @@ function Test-EnterpriseConfiguration {
 function Get-ConfigurationContext {
     [CmdletBinding()]
     param()
-    
+
     process {
         return $Script:ConfigContext
     }
@@ -872,7 +876,7 @@ function Get-ConfigurationContext {
 function Reset-ConfigurationContext {
     [CmdletBinding(SupportsShouldProcess)]
     param()
-    
+
     process {
         if ($PSCmdlet.ShouldProcess("Configuration Context", "Reset")) {
             $Script:ConfigContext.LoadedConfigs.Clear()
@@ -880,7 +884,7 @@ function Reset-ConfigurationContext {
             $Script:ConfigContext.AuditLog = @()
             $Script:ConfigContext.HasError = $false
             $Script:ConfigContext.Timestamp = Get-Date
-            
+
             Write-Verbose "Configuration context has been reset"
         }
     }
@@ -896,29 +900,27 @@ function ConvertTo-TomlString {
         [Parameter(Mandatory = $true)]
         [hashtable]$Configuration
     )
-    
+
     $lines = @()
-    
+
     foreach ($section in $Configuration.GetEnumerator()) {
         $lines += "[$($section.Key)]"
-        
+
         if ($section.Value -is [hashtable]) {
             foreach ($item in $section.Value.GetEnumerator()) {
                 $value = $item.Value
                 if ($value -is [string]) {
                     $lines += "$($item.Key) = `"$value`""
-                }
-                elseif ($value -is [bool]) {
+                } elseif ($value -is [bool]) {
                     $lines += "$($item.Key) = $($value.ToString().ToLower())"
-                }
-                else {
+                } else {
                     $lines += "$($item.Key) = $value"
                 }
             }
         }
         $lines += ""
     }
-    
+
     return $lines -join "`n"
 }
 
@@ -928,22 +930,21 @@ function ConvertTo-YamlString {
         [Parameter(Mandatory = $true)]
         [hashtable]$Configuration
     )
-    
+
     # Basic YAML conversion - would need full YAML serializer for production
     $lines = @()
-    
+
     foreach ($item in $Configuration.GetEnumerator()) {
         if ($item.Value -is [hashtable]) {
             $lines += "$($item.Key):"
             foreach ($subItem in $item.Value.GetEnumerator()) {
                 $lines += "  $($subItem.Key): $($subItem.Value)"
             }
-        }
-        else {
+        } else {
             $lines += "$($item.Key): $($item.Value)"
         }
     }
-    
+
     return $lines -join "`n"
 }
 
@@ -953,12 +954,12 @@ function ConvertTo-IniString {
         [Parameter(Mandatory = $true)]
         [hashtable]$Configuration
     )
-    
+
     $lines = @()
-    
+
     foreach ($section in $Configuration.GetEnumerator()) {
         $lines += "[$($section.Key)]"
-        
+
         if ($section.Value -is [hashtable]) {
             foreach ($item in $section.Value.GetEnumerator()) {
                 $lines += "$($item.Key)=$($item.Value)"
@@ -966,7 +967,7 @@ function ConvertTo-IniString {
         }
         $lines += ""
     }
-    
+
     return $lines -join "`n"
 }
 
